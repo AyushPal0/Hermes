@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.research import router as research_router
+from app.db.base import Base
+from app.db.database import engine
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="AI Researcher API",
@@ -17,6 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(research_router)
 
 @app.get("/")
 async def root():
