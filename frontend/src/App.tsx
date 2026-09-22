@@ -4,6 +4,9 @@ import "./App.css";
 
 function App() {
   const [backendStatus, setBackendStatus] = useState("Checking...");
+  const [question, setQuestion] = useState("");
+  const [depth, setDepth] = useState("Deep");
+  const [sources, setSources] = useState("Web");
 
   useEffect(() => {
     checkBackendHealth()
@@ -93,6 +96,8 @@ function App() {
             <textarea
               className="research-input"
               placeholder="e.g. How is generative AI transforming software development?"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
             />
 
             <div className="research-options">
@@ -100,15 +105,24 @@ function App() {
                 <label>Research Depth</label>
 
                 <div className="option-buttons">
-                  <button className="option-button">
+                  <button
+                    className={`option-button ${depth === "Quick" ? "selected" : ""}`}
+                    onClick={() => setDepth("Quick")}
+                  >
                     Quick
                   </button>
 
-                  <button className="option-button selected">
+                  <button
+                    className={`option-button ${depth === "Deep" ? "selected" : ""}`}
+                    onClick={() => setDepth("Deep")}
+                  >
                     Deep
                   </button>
 
-                  <button className="option-button">
+                  <button
+                    className={`option-button ${depth === "Academic" ? "selected" : ""}`}
+                    onClick={() => setDepth("Academic")}
+                  >
                     Academic
                   </button>
                 </div>
@@ -118,15 +132,24 @@ function App() {
                 <label>Sources</label>
 
                 <div className="option-buttons">
-                  <button className="option-button selected">
+                  <button
+                    className={`option-button ${sources === "Web" ? "selected" : ""}`}
+                    onClick={() => setSources("Web")}
+                  >
                     Web
                   </button>
 
-                  <button className="option-button">
+                  <button
+                    className={`option-button ${sources === "Papers" ? "selected" : ""}`}
+                    onClick={() => setSources("Papers")}
+                  >
                     Papers
                   </button>
 
-                  <button className="option-button">
+                  <button
+                    className={`option-button ${sources === "Documents" ? "selected" : ""}`}
+                    onClick={() => setSources("Documents")}
+                  >
                     Documents
                   </button>
                 </div>
