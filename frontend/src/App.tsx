@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
-import { checkBackendHealth } from "./services/api";
+import {
+  checkBackendHealth,
+  createResearchProject,
+  getResearchProjects,
+  type ResearchProject,
+} from "./services/api";
 import "./App.css";
 
 function App() {
   const [backendStatus, setBackendStatus] = useState("Checking...");
   const [question, setQuestion] = useState("");
-  const [depth, setDepth] = useState("Deep");
-  const [sources, setSources] = useState("Web");
+  const [depth, setDepth] = useState("deep");
+  const [sources, setSources] = useState("web");
+  const [projects, setProjects] = useState<ResearchProject[]>([]);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     checkBackendHealth()
@@ -16,7 +23,39 @@ function App() {
       .catch(() => {
         setBackendStatus("Backend unavailable");
       });
+
+    getResearchProjects()
+      .then((data) => {
+        setProjects(data);
+      })
+      .catch(() => {
+        console.error("Failed to load research projects");
+      });
   }, []);
+
+  const handleStartResearch = async () => {
+    if (!question.trim()) {
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const project = await createResearchProject({
+        title: question.trim().slice(0, 60),
+        question: question.trim(),
+        depth,
+        sources,
+      });
+
+      setProjects((current) => [project, ...current]);
+      setQuestion("");
+    } catch (error) {
+      console.error("Failed to create research project:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <div className="app">
@@ -41,7 +80,10 @@ function App() {
 
       <main className="workspace">
         <aside className="sidebar">
-          <button className="new-research">
+          <button
+            className="new-research"
+            onClick={() => setQuestion("")}
+          >
             <span>+</span>
             New Research
           </button>
@@ -68,17 +110,21 @@ function App() {
           <div className="sidebar-section">
             <p className="section-title">Recent Research</p>
 
-            <button className="research-item">
-              AI in Drug Discovery
-            </button>
-
-            <button className="research-item">
-              Future of Quantum Computing
-            </button>
-
-            <button className="research-item">
-              Impact of AI on Education
-            </button>
+            {projects.length === 0 ? (
+              <p style={{ padding: "0 10px", fontSize: "12px", color: "#626b7b" }}>
+                No research projects yet
+              </p>
+            ) : (
+              projects.map((project) => (
+                <button
+                  className="research-item"
+                  key={project.id}
+                  onClick={() => setQuestion(project.question)}
+                >
+                  {project.title}
+                </button>
+              ))
+            )}
           </div>
         </aside>
 
@@ -97,7 +143,7 @@ function App() {
               className="research-input"
               placeholder="e.g. How is generative AI transforming software development?"
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={(event) => setQuestion(event.target.value)}
             />
 
             <div className="research-options">
@@ -106,22 +152,25 @@ function App() {
 
                 <div className="option-buttons">
                   <button
-                    className={`option-button ${depth === "Quick" ? "selected" : ""}`}
-                    onClick={() => setDepth("Quick")}
+                    className={`option-button ${depth === "quick" ? "selected" : ""}`}
+                    onClick={() => setDepth("quick")}
+                    type="button"
                   >
                     Quick
                   </button>
 
                   <button
-                    className={`option-button ${depth === "Deep" ? "selected" : ""}`}
-                    onClick={() => setDepth("Deep")}
+                    className={`option-button ${depth === "deep" ? "selected" : ""}`}
+                    onClick={() => setDepth("deep")}
+                    type="button"
                   >
                     Deep
                   </button>
 
                   <button
-                    className={`option-button ${depth === "Academic" ? "selected" : ""}`}
-                    onClick={() => setDepth("Academic")}
+                    className={`option-button ${depth === "academic" ? "selected" : ""}`}
+                    onClick={() => setDepth("academic")}
+                    type="button"
                   >
                     Academic
                   </button>
@@ -133,22 +182,25 @@ function App() {
 
                 <div className="option-buttons">
                   <button
-                    className={`option-button ${sources === "Web" ? "selected" : ""}`}
-                    onClick={() => setSources("Web")}
+                    className={`option-button ${sources === "web" ? "selected" : ""}`}
+                    onClick={() => setSources("web")}
+                    type="button"
                   >
                     Web
                   </button>
 
                   <button
-                    className={`option-button ${sources === "Papers" ? "selected" : ""}`}
-                    onClick={() => setSources("Papers")}
+                    className={`option-button ${sources === "papers" ? "selected" : ""}`}
+                    onClick={() => setSources("papers")}
+                    type="button"
                   >
                     Papers
                   </button>
 
                   <button
-                    className={`option-button ${sources === "Documents" ? "selected" : ""}`}
-                    onClick={() => setSources("Documents")}
+                    className={`option-button ${sources === "documents" ? "selected" : ""}`}
+                    onClick={() => setSources("documents")}
+                    type="button"
                   >
                     Documents
                   </button>
@@ -156,8 +208,13 @@ function App() {
               </div>
             </div>
 
-            <button className="start-button">
-              Start Research
+            <button
+              className="start-button"
+              onClick={handleStartResearch}
+              disabled={isCreating}
+              type="button"
+            >
+              {isCreating ? "Creating Research..." : "Start Research"}
               <span>→</span>
             </button>
           </div>
