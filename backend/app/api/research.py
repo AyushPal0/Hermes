@@ -10,7 +10,13 @@ from app.schemas.research_project import (
 )
 from app.schemas.research_source import ResearchSourceResponse
 from app.services.research_pipeline import ResearchPipeline
+from pydantic import BaseModel
 
+from app.services.vector.chroma_store import ChromaStore
+
+class ResearchQuery(BaseModel):
+    query: str
+    n_results: int = 5
 
 router = APIRouter(
     prefix="/api/research",
@@ -182,3 +188,18 @@ def get_research_sources(
     )
 
     return sources
+
+
+@router.post("/{project_id}/search")
+def search_research_knowledge(
+    project_id: int,
+    request: ResearchQuery,
+):
+    vector_store = ChromaStore()
+
+    results = vector_store.search(
+        query=request.query,
+        n_results=request.n_results,
+    )
+
+    return results

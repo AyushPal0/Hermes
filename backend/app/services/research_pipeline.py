@@ -6,6 +6,7 @@ from app.models.research_project import ResearchProject
 from app.models.research_source import ResearchSource
 from app.services.extraction.webpage import extract_webpage
 from app.services.search.web_search import WebSearchService
+from app.services.indexing.research_indexer import ResearchIndexer
 
 
 class ResearchPipeline:
@@ -14,6 +15,7 @@ class ResearchPipeline:
 
         self.db = db
         self.search_service = WebSearchService()
+        self.indexer = ResearchIndexer()
 
     async def run(
         self,
@@ -84,5 +86,13 @@ class ResearchPipeline:
 
         for source in sources:
             self.db.refresh(source)
+
+            self.indexer.index_source(
+        source_id=source.id,
+        project_id=source.project_id,
+        title=source.title,
+        url=source.url,
+        content=source.content,
+    )
 
         return sources
