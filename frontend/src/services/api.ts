@@ -55,3 +55,32 @@ export async function getResearchProjects(): Promise<ResearchProject[]> {
 
     return response.json();
 }
+
+export interface ResearchRunResponse {
+    project_id: number;
+    status: string;
+    source_count: number;
+    sources: {
+        id: number;
+        title: string;
+        url: string;
+    }[];
+}
+
+export async function runResearch(
+    projectId: number
+): Promise<ResearchRunResponse> {
+
+    const response = await fetch(
+        `${API_BASE_URL}/api/research/${projectId}/run`,
+        {
+            method: "POST",
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("Research execution failed");
+    }
+
+    return response.json();
+}
