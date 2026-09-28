@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.research import router as research_router
 from app.db.base import Base
 from app.db.database import engine
+from app.models.research_project import ResearchProject
+from app.models.research_source import ResearchSource
 
 Base.metadata.create_all(bind=engine)
 
