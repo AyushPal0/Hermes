@@ -123,7 +123,7 @@ async def run_research(
         # Run web search + webpage extraction
         sources = await pipeline.run(
             project=project,
-            max_results=5,
+            
         )
 
         # Research completed successfully
