@@ -14,8 +14,14 @@ from pydantic import BaseModel
 
 from app.services.vector.chroma_store import ChromaStore
 
+from app.services.rag.generator import RAGGenerator
+
 class ResearchQuery(BaseModel):
     query: str
+    n_results: int = 5
+
+class ResearchQuestion(BaseModel):
+    question: str
     n_results: int = 5
 
 router = APIRouter(
@@ -203,3 +209,34 @@ def search_research_knowledge(
     )
 
     return results
+@router.post("/{project_id}/ask")
+async def ask_research_question(
+    project_id: int,
+    request: ResearchQuestion,
+    db: Session = Depends(get_db),
+):
+
+    project = db.get(
+        ResearchProject,
+        project_id,
+    )
+
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail="Research project not found",
+        )
+
+    rag = RAGGenerator()
+
+    result = await rag.generate(
+        question=request.question,
+        n_results=request.n_results,
+    )
+
+    return {
+        "project_id": project.id,
+        "question": request.question,
+        "answer": result["answer"],
+        "sources": result["sources"],
+    }
