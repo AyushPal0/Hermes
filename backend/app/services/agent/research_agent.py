@@ -9,6 +9,7 @@ from app.services.agent.planner import ResearchPlanner
 from app.services.extraction.webpage import extract_webpage
 from app.services.search.web_search import WebSearchService
 from app.services.indexing.research_indexer import ResearchIndexer
+from app.services.scoring.source_scorer import SourceScorer
 
 
 class ResearchAgent:
@@ -20,6 +21,7 @@ class ResearchAgent:
         self.planner = ResearchPlanner()
         self.search_service = WebSearchService()
         self.indexer = ResearchIndexer()
+        self.scorer = SourceScorer()
 
     async def run(
         self,
@@ -115,15 +117,56 @@ class ResearchAgent:
         )
 
         # -----------------------------------------
-        # STEP 5: SAVE SOURCES
+        # STEP 5: SCORE SOURCES
         # -----------------------------------------
 
-        sources = []
+        scored_sources = []
 
         for item, extracted in processed:
 
             result = item["result"]
-            sub_question = item["sub_question"]
+
+            score = self.scorer.score(
+                title=(
+                    extracted["title"]
+                    or result.title
+                ),
+                snippet=result.snippet,
+                content=extracted["text"],
+                url=result.url,
+            )
+
+            scored_sources.append(
+                {
+                    "item": item,
+                    "extracted": extracted,
+                    "score": score,
+                }
+            )
+
+        # -----------------------------------------
+        # STEP 6: RANK SOURCES
+        # -----------------------------------------
+
+        scored_sources.sort(
+            key=lambda item: item["score"].score,
+            reverse=True,
+        )
+
+        # -----------------------------------------
+        # STEP 7: SAVE SOURCES
+        # -----------------------------------------
+
+        sources = []
+
+        for item in scored_sources:
+
+            research_item = item["item"]
+            extracted = item["extracted"]
+            score = item["score"]
+
+            result = research_item["result"]
+            sub_question = research_item["sub_question"]
 
             source = ResearchSource(
                 project_id=project.id,
@@ -144,13 +187,14 @@ class ResearchAgent:
                 {
                     "source": source,
                     "sub_question": sub_question,
+                    "score": score,
                 }
             )
 
         self.db.commit()
 
         # -----------------------------------------
-        # STEP 6: INDEX SOURCES
+        # STEP 8: INDEX SOURCES
         # -----------------------------------------
 
         indexed_chunks = 0
@@ -171,12 +215,20 @@ class ResearchAgent:
 
             indexed_chunks += chunk_count
 
+        # -----------------------------------------
+        # STEP 9: RETURN RESEARCH RESULTS
+        # -----------------------------------------
+
         return {
             "plan": plan,
             "source_count": len(sources),
             "indexed_chunks": indexed_chunks,
             "sources": [
-                item["source"]
+                {
+                    "source": item["source"],
+                    "score": item["score"].score,
+                    "score_reasons": item["score"].reasons,
+                }
                 for item in sources
             ],
         }
